@@ -1,0 +1,51 @@
+import subprocess
+from datetime import date, timedelta
+import MySQLdb
+
+var = subprocess.Popen(['df', '-h'], stdout=subprocess.PIPE) 
+
+diskspace = var.communicate()[0].strip().split("\n") 
+
+
+def my_function():
+    conn = MySQLdb.connect("localhost","root","hypE123!")
+    cursor = conn.cursor()
+    current_date = date.today().isoformat()
+    date2 = str((date.today()-timedelta(days=15)).isoformat())
+    query = "PURGE BINARY LOGS BEFORE '" + date2 + "';"
+    print(query)
+    cursor.execute(query)
+    data = cursor.fetchone()
+
+def mail():
+    import smtplib
+
+    FROM = 'masterdb@githyp.com'
+
+    TO = ["raghunath.v@calpinetech.com"] # must be a list
+
+    SUBJECT = "MYSQL PURGEING ALERT !"
+
+    TEXT = "Mysql log purging alert !"
+
+
+    message = """\
+        From: %s
+        To: %s
+        Subject: %s
+
+        %s
+        """ % (FROM, ", ".join(TO), SUBJECT, TEXT)
+    server = smtplib.SMTP('localhost')
+    server.sendmail(FROM, TO, message)
+    server.quit()
+
+
+for partion in diskspace:
+    space = partion.split()[-2][:2]
+    if partion.split()[-1] == '/' and int(space) >=80:
+        print(partion)
+        my_function()
+ 	mail()
+    else:
+        print("disk space is okay")
